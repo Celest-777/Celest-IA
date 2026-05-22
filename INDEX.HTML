@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Celest IA - Gestor de Tareas Futurista</title>
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: radial-gradient(circle at top, #0f0c29, #302b63, #24243e);
+  color: #fff;
+  overflow-x: hidden;
+}
+body::after {
+  content: "";
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('https://upload.wikimedia.org/wikipedia/commons/7/7f/Starsinthesky.jpg') repeat;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+header h1 {
+  text-align: center;
+  font-size: 3em;
+  color: #00ffff;
+  text-shadow: 0 0 10px #00ffff, 0 0 20px #0ff;
+  margin-top: 20px;
+}
+
+#tablero {
+  display: flex;
+  justify-content: space-around;
+  margin: 20px;
+  flex-wrap: wrap;
+}
+
+.columna {
+  background: rgba(0,0,0,0.6);
+  padding: 20px;
+  border-radius: 15px;
+  width: 30%;
+  min-height: 300px;
+  box-shadow: 0 0 20px #00ffff;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.columna h2 {
+  text-align: center;
+  color: #0ff;
+  text-shadow: 0 0 10px #0ff;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  min-height: 50px;
+  flex-grow: 1;
+}
+
+li {
+  margin: 5px 0;
+  padding: 10px;
+  border-left: 4px solid #0ff;
+  background: rgba(0,0,0,0.5);
+  cursor: grab;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: 0.3s;
+}
+li:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 20px #0ff, 0 0 30px #00ffff;
+}
+li.completada { text-decoration: line-through; color: gray; opacity: 0.7; }
+li.prioridad-alta { border-left-color: #ff0066; box-shadow: 0 0 15px #ff0066; }
+li.prioridad-media { border-left-color: #ffcc00; box-shadow: 0 0 15px #ffcc00; }
+li.prioridad-normal { border-left-color: #00ffff; box-shadow: 0 0 15px #0ff; }
+
+form {
+  text-align: center;
+  margin-bottom: 20px;
+}
+input, select {
+  padding: 10px;
+  border-radius: 5px;
+  border: 2px solid #00ffff;
+  background: transparent;
+  color: #00ffff;
+  width: 60%;
+  font-size: 1em;
+  outline: none;
+  transition: 0.3s;
+  margin-bottom: 10px;
+}
+input:focus, select:focus {
+  box-shadow: 0 0 10px #0ff, 0 0 20px #00ffff;
+}
+button {
+  background: #00ffff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  color: black;
+  transition: 0.3s;
+}
+button:hover {
+  background: #0ff;
+  box-shadow: 0 0 10px #0ff, 0 0 20px #00ffff;
+}
+
+#logo-ia {
+  display: block;
+  margin: 0 auto 20px auto;
+  width: 120px;
+  height: 120px;
+  background: url("https://upload.wikimedia.org/wikipedia/commons/2/21/M51_Hubble_2015_mosaic.jpg") no-repeat center;
+  background-size: cover;
+  border-radius: 50%;
+  box-shadow: 0 0 20px #ff00ff, 0 0 40px #ff66ff;
+}
+
+#ia-sugerencia-box {
+  text-align:center;
+  margin:20px auto;
+  font-size:1.2em;
+  color:#ff00ff;
+  text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff66ff;
+  border: 2px solid #ff00ff;
+  border-radius: 10px;
+  padding: 15px;
+  width: 300px;
+  background: rgba(0,0,0,0.6);
+}
+
+/* Modal edición */
+#modal-editar {
+  display:none; 
+  position:fixed; 
+  top:0; left:0; 
+  width:100%; height:100%; 
+  background:rgba(0,0,0,0.8); 
+  justify-content:center; 
+  align-items:center; 
+  z-index:1000;
+}
+#modal-editar div {
+  background:#111; padding:20px; border-radius:15px; min-width:300px; color:#fff; box-shadow:0 0 20px #0ff;
+  display:flex; flex-direction:column; gap:10px;
+}
+#modal-editar label { font-weight:bold; margin-top:5px; }
+
+/* Ruleta con Canvas */
+#ruleta-ia { text-align:center; margin-top:20px; }
+#puntero {
+  width: 0; height: 0;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: 30px solid #ff0;
+  margin: 0 auto;
+  position: relative; top: -20px; z-index:10;
+}
+#resultado-ruleta { font-weight:bold; margin-top:10px; color:#ff0; text-shadow:0 0 5px #ff0; }
+</style>
+</head>
+<body>
+<header>
+<h1>Celest IA</h1>
+</header>
+
+<section id="tablero">
+<div class="columna" id="todo">
+<h2>Por Hacer</h2>
+<ul></ul>
+</div>
+<div class="columna" id="progreso">
+<h2>En Progreso</h2>
+<ul></ul>
+</div>
+<div class="columna" id="hecho">
+<h2>Completadas</h2>
+<ul></ul>
+</div>
+</section>
+
+<form id="form-tarea">
+<input type="text" id="input-tarea" placeholder="Nueva tarea">
+<button type="submit">Agregar</button>
+</form>
+
+<div id="logo-ia"></div>
+<div id="ia-sugerencia-box">IA sugiere: Mantén tu flujo de trabajo organizado</div>
+
+<div id="ruleta-ia">
+  <div id="puntero"></div>
+  <canvas id="canvas-ruleta" width="300" height="300"></canvas>
+  <button id="btn-ruleta">GIRAR</button>
+</div>
+
+<div id="modal-editar">
+<div>
+<label>Nombre:</label>
+<input type="text" id="editar-nombre">
+<label>Fecha:</label>
+<input type="date" id="editar-fecha">
+<label>Prioridad:</label>
+<select id="editar-prioridad">
+<option value="normal">Normal</option>
+<option value="media">Media</option>
+<option value="alta">Alta</option>
+</select>
+<div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+<button onclick="guardarEdicion()">Guardar</button>
+<button onclick="cerrarModal()">Cancelar</button>
+</div>
+</div>
+</div>
+
+<script>
+const input = document.getElementById("input-tarea");
+const form = document.getElementById("form-tarea");
+const todo = document.querySelector("#todo ul");
+const progreso = document.querySelector("#progreso ul");
+const hecho = document.querySelector("#hecho ul");
+const iaSugerenciaBox = document.getElementById("ia-sugerencia-box");
+const btnRuleta = document.getElementById("btn-ruleta");
+let tareaArrastrada = null;
+let tareaSeleccionada = null;
+
+const sugerencias = [
+  "Revisar correos",
+  "Organizar escritorio",
+  "Hacer pausa",
+  "Terminar tarea",
+  "Actualizar tablero",
+  "Planificar mañana"
+];
+
+// Drag & Drop
+function habilitarDrag(tarea) {
+  tarea.addEventListener("dragstart", e => { tareaArrastrada = tarea; setTimeout(()=>tarea.style.display="none",0); });
+  tarea.addEventListener("dragend", e => { tarea.style.display="flex"; tareaArrastrada=null; });
+}
+const columnas = [todo.parentElement, progreso.parentElement, hecho.parentElement];
+columnas.forEach(col => {
+  const lista = col.querySelector("ul");
+  lista.addEventListener("dragover", e=>e.preventDefault());
+  lista.addEventListener("drop", e=>{
+    e.preventDefault();
+    if(!tareaArrastrada) return;
+    lista.appendChild(tareaArrastrada);
+    tareaArrastrada.style.display="flex";
+    tareaArrastrada=null;
+  });
+});
+
+// Modal editar
+function abrirModal(tarea) {
+  tareaSeleccionada = tarea;
+  document.getElementById("editar-nombre").value = tarea.firstChild.textContent;
+  document.getElementById("editar-fecha").value = "";
+  document.getElementById("editar-prioridad").value = "normal";
+  document.getElementById("modal-editar").style.display = "flex";
+}
+function cerrarModal(){ document.getElementById("modal-editar").style.display="none"; }
+function guardarEdicion(){
+  if(!tareaSeleccionada) return;
+  const nombre = document.getElementById("editar-nombre").value;
+  tareaSeleccionada.firstChild.textContent = nombre;
+  tareaSeleccionada.classList.remove("prioridad-normal","prioridad-media","prioridad-alta");
+  tareaSeleccionada.classList.add("prioridad-"+document.getElementById("editar-prioridad").value);
+  cerrarModal();
+}
+
+// Agregar tarea
+form.addEventListener("submit", e => {
+  e.preventDefault();
+  if (!input.value.trim()) return;
+  agregarTarea({texto: input.value, prioridad: "normal"});
+  input.value = "";
+});
+function agregarTarea(obj, columna = todo) {
+  const li = document.createElement("li");
+  const span = document.createElement("span");
+  span.textContent = obj.texto;
+  li.appendChild(span);
+  li.classList.add("prioridad-" + obj.prioridad);
+  li.draggable = true;
+  li.addEventListener("click", () => abrirModal(li));
+
+  const btnEliminar = document.createElement("button");
+  btnEliminar.textContent = "X";
+  btnEliminar.onclick = e => { e.stopPropagation(); li.remove(); };
+  li.appendChild(btnEliminar);
+
+  columna.appendChild(li);
+  habilitarDrag(li);
+}
+
+// Ruleta Canvas
+const canvas = document.getElementById('canvas-ruleta');
+const ctx = canvas.getContext('2d');
+const sectores = sugerencias;
+const colores = ['#ff3399','#ffcc00','#00ffff','#ff66ff','#66ff66','#3399ff'];
+let anguloInicio = 0;
+const anguloPorSector = 2 * Math.PI / sectores.length;
+
+function dibujarRuleta() {
+  const radio = canvas.width / 2;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for(let i=0;i<sectores.length;i++){
+    const inicio = anguloInicio + i * anguloPorSector;
+    ctx.beginPath();
+    ctx.moveTo(radio, radio);
+    ctx.arc(radio, radio, radio-10, inicio, inicio + anguloPorSector);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+    grad.addColorStop(0, colores[i]);
+    grad.addColorStop(1, '#000');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(radio, radio);
+    ctx.rotate(inicio + anguloPorSector/2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 14px Arial';
+    ctx.fillText(sectores[i], radio-20, 0);
+    ctx.restore();
+  }
+}
+
+btnRuleta.addEventListener('click', () => {
+  const vueltas = Math.floor(Math.random()*5+5);
+  const grados = vueltas*360 + Math.floor(Math.random()*360);
+  const rotacion = grados * Math.PI / 180;
+  let inicio = anguloInicio;
+  const duracion = 4000;
+  const inicioTiempo = performance.now();
+
+  const indiceFinal = Math.floor(Math.random()*sectores.length); // sector final fijo
+
+  function animar(time){
+    let tiempo = time - inicioTiempo;
+    if(tiempo>duracion) tiempo=duracion;
+    const progreso = tiempo/duracion;
+    anguloInicio = inicio + rotacion*progreso;
+    dibujarRuleta();
+    if(tiempo<duracion) requestAnimationFrame(animar);
+    else {
+      const tareaSugerida = sectores[indiceFinal];
+      iaSugerenciaBox.textContent = "IA sugiere: " + tareaSugerida;
+      agregarTarea({texto: tareaSugerida, prioridad:"normal"}, progreso.querySelector("ul"));
+    }
+  }
+  requestAnimationFrame(animar);
+});
+
+dibujarRuleta();
+</script>
+</body>
+</html>
